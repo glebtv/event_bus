@@ -127,9 +127,18 @@ class EventBus
     end
 
     def subscribe_obj(listener)
-      registrations.add_block(/.*/) do |payload|
-        method = payload[:event_name].to_sym
-        listener.send(method, payload) if listener.respond_to?(method)
+      if defined?(::Rails) && Rails.env.development?
+        listener_name = listener.class.name
+        registrations.add_block(/.*/) do |payload|
+          method = payload[:event_name].to_sym
+          listener = listener_name.constantize.new
+          listener.send(method, payload) if listener.respond_to?(method)
+        end
+      else
+        registrations.add_block(/.*/) do |payload|
+          method = payload[:event_name].to_sym
+          listener.send(method, payload) if listener.respond_to?(method)
+        end
       end
     end
 
